@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Centering Note",
+      "name": "",
       "waypointRelativePos": 0.1,
       "endWaypointRelativePos": null,
       "command": {
@@ -51,7 +51,7 @@
       }
     },
     {
-      "name": "Shoot Note",
+      "name": "",
       "waypointRelativePos": 0.85,
       "endWaypointRelativePos": null,
       "command": {
@@ -82,7 +82,7 @@
     "rotation": -59.99999999999999
   },
   "reversed": false,
-  "folder": "4N",
+  "folder": null,
   "idealStartingState": {
     "velocity": 0,
     "rotation": 0.0

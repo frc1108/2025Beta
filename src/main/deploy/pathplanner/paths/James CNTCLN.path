@@ -73,7 +73,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Centering",
+      "name": "",
       "waypointRelativePos": 0.05,
       "endWaypointRelativePos": null,
       "command": {
@@ -109,7 +109,7 @@
       }
     },
     {
-      "name": "intake",
+      "name": "",
       "waypointRelativePos": 0.75,
       "endWaypointRelativePos": null,
       "command": {

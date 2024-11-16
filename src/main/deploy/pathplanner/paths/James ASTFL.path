@@ -52,7 +52,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Intake Note",
+      "name": "",
       "waypointRelativePos": 0.65,
       "endWaypointRelativePos": null,
       "command": {

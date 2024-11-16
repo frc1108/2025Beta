@@ -6,20 +6,13 @@ package frc.robot;
 
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.Constants.ArmConstants;
-import frc.robot.Constants.AutoConstants;
-import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.HendersonConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.Constants.UnderrollerConstants;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.HendersonFeeder;
@@ -28,10 +21,11 @@ import frc.robot.subsystems.HendersonLauncher;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import java.util.List;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -52,12 +46,16 @@ public class RobotContainer {
   CommandXboxController m_driverController = new CommandXboxController(OIConstants.kDriverControllerPort);
   CommandXboxController m_operatorController = new CommandXboxController(OIConstants.kOperatorControllerPort);
 
+  @Logged(name = "Auto Selector") private final SendableChooser<Command> m_autoChooser;
+  private int m_invertDriveAlliance = -1;
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+    configureNamedCommands();
+    m_autoChooser = AutoBuilder.buildAutoChooser();
 
     // Configure default commands
     m_robotDrive.setDefaultCommand(
@@ -118,43 +116,96 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Create config for trajectory
-    TrajectoryConfig config = new TrajectoryConfig(
-        AutoConstants.kMaxSpeedMetersPerSecond,
-        AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-        // Add kinematics to ensure max speed is actually obeyed
-        .setKinematics(DriveConstants.kDriveKinematics);
+    return m_autoChooser.getSelected();
+  }
 
-    // An example trajectory to follow. All units in meters.
-    Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-        new Pose2d(0, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-        List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
-        // End 3 meters straight ahead of where we started, facing forward
-        new Pose2d(3, 0, new Rotation2d(0)),
-        config);
+  private void configureNamedCommands() {
+      NamedCommands.registerCommand("LaunchNote", shoot());
+      NamedCommands.registerCommand("IntakeNote", intakeNote());
+      NamedCommands.registerCommand("AmpShot", AmpShot());
+      NamedCommands.registerCommand("Stop", Stop());
+      NamedCommands.registerCommand("ShootBackwards", shootBackwards());
+      NamedCommands.registerCommand("CenteringNote", centeringNote());
 
-    var thetaController = new ProfiledPIDController(
-        AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    }
 
-    SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-        exampleTrajectory,
-        m_robotDrive::getPose, // Functional interface to feed supplier
-        DriveConstants.kDriveKinematics,
+  public void configureWithAlliance(Alliance alliance) {
+    m_invertDriveAlliance = (alliance == Alliance.Blue)?-1:1;
+  }
+   
+  public Command intakeNote() {
+    return 
+      Commands.sequence(
+        m_arm.setArmGoalCommand(ArmConstants.kArmPickupAngleRads),
+        Commands.waitSeconds(0.1),
+        Commands.parallel(
+          Commands.runOnce(()->m_launcher.set(HendersonConstants.kIntakeLauncherSpeed),m_launcher),
+          Commands.runOnce(()->m_feeder.set(HendersonConstants.kIntakeFeederSpeed),m_feeder),
+          Commands.runOnce(()->m_underroller.setUnderrollerspeed(UnderrollerConstants.kUnderrollerIntakeSpeed),m_underroller)
+        ),
+        Commands.race(Commands.waitUntil(()->m_feeder.getBeamBreak()),Commands.waitSeconds(5))
+        .finallyDo(()->
+          Commands.parallel(
+            Commands.runOnce(()->m_launcher.set(0),m_launcher),
+            Commands.runOnce(()->m_feeder.set(0),m_feeder),
+            Commands.runOnce(()->m_underroller.setUnderrollerspeed(0),m_underroller)
+          )
+        )
+      );
+  }
 
-        // Position controllers
-        new PIDController(AutoConstants.kPXController, 0, 0),
-        new PIDController(AutoConstants.kPYController, 0, 0),
-        thetaController,
-        m_robotDrive::setModuleStates,
-        m_robotDrive);
+  public Command shoot() {
+    return Commands.sequence(
+        m_arm.setArmGoalCommand(ArmConstants.kArmShootingAngleRads),
+        Commands.waitSeconds(0.5),
+        Commands.runOnce(()->m_launcher.set(-0.8)),
+        Commands.waitSeconds(0.75),
+        Commands.runOnce(()->m_feeder.set(-0.6)),
+        Commands.waitSeconds(0.2),
+        m_feeder.stop(),
+        Commands.runOnce(()->m_launcher.set(0))
+     );
+  }
 
-    // Reset odometry to the starting pose of the trajectory.
-    m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
+  public Command AmpShot() {
+     return Commands.sequence(
+         m_arm.setArmGoalCommand(ArmConstants.kArmShootingAngleRads),
+         Commands.waitSeconds(1.75),
+         Commands.runOnce(()->m_feeder.set(1.0)),
+         Commands.waitSeconds(1.0),
+         Commands.runOnce(()->m_feeder.set(0.0)),
+         m_arm.setArmGoalCommand(ArmConstants.kArmPickupAngleRads)
+      );
+   }
 
-    // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+  public Command Stop() {
+     return Commands.sequence(
+         Commands.runOnce(()->m_launcher.set(0)),
+         Commands.runOnce(()->m_feeder.set(0)),
+         Commands.runOnce(()->m_underroller.setUnderrollerspeed(0),m_underroller)
+      );
+   }
+  
+    public Command shootBackwards() {
+    return Commands.sequence(
+      m_arm.setArmGoalCommand(ArmConstants.kArmPickupAngleRads),
+      Commands.waitSeconds(0.3),
+      Commands.runOnce(()->m_feeder.set(1)),
+      Commands.waitSeconds(0.3),
+      Commands.runOnce(()->m_launcher.set(0.8)),
+      Commands.waitSeconds(0.75)).finallyDo(()->
+        Commands.parallel(
+                        Commands.runOnce(()->m_launcher.set(0.0)),
+                        Commands.runOnce(()->m_feeder.set(0.0))));
+  }
+
+  public Command centeringNote() {
+    return Commands.sequence(
+      Commands.parallel(Commands.runOnce(()->m_launcher.set(0.1)),
+                        Commands.runOnce(()->m_feeder.set(-0.5))),
+       Commands.waitSeconds(0.05)).finallyDo(()->
+        Commands.parallel(
+                        Commands.runOnce(()->m_launcher.set(0.0)),
+                        Commands.runOnce(()->m_feeder.set(0.0))));
   }
 }
