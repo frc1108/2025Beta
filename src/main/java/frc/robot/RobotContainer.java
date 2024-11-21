@@ -9,6 +9,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.HendersonConstants;
 import frc.robot.Constants.OIConstants;
@@ -56,6 +57,7 @@ public class RobotContainer {
     configureButtonBindings();
     configureNamedCommands();
     m_autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("AutoChooser",m_autoChooser);
 
     // Configure default commands
     m_robotDrive.setDefaultCommand(

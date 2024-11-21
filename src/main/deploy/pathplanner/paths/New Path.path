@@ -3,52 +3,56 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.75,
-        "y": 7.05
+        "x": 7.206779504468099,
+        "y": 3.610224674994805
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.250688231281928,
-        "y": 7.095433689961154
+        "x": 6.609739764934075,
+        "y": 3.7967995935991903
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 2.75,
-        "y": 4.05
+        "x": 1.3203408224998268,
+        "y": 5.597247558131481
       },
       "prevControl": {
-        "x": 1.2510726248571555,
-        "y": 4.106716170951351
+        "x": 2.019996767266262,
+        "y": 5.653220033712795
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": -54.34627493996824
+    }
+  ],
   "constraintZones": [],
-  "pointTowardsZones": [],
+  "pointTowardsZones": [
+    {
+      "fieldPosition": {
+        "x": 0.4,
+        "y": 5.5
+      },
+      "rotationOffset": 0.0,
+      "minWaypointRelativePos": 0.25,
+      "maxWaypointRelativePos": 0.75,
+      "name": "Point Towards Zone"
+    }
+  ],
   "eventMarkers": [
     {
-      "name": "Shoot",
-      "waypointRelativePos": 0.35,
+      "name": "ShootBackwards",
+      "waypointRelativePos": 0.7802013422818798,
       "endWaypointRelativePos": null,
-      "command": {
-        "type": "parallel",
-        "data": {
-          "commands": [
-            {
-              "type": "named",
-              "data": {
-                "name": "ShootBackwards"
-              }
-            }
-          ]
-        }
-      }
+      "command": null
     }
   ],
   "globalConstraints": {
